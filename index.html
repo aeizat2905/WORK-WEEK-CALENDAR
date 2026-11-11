@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ADI ASE Work Weeks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reference tool. Today cards on top, quick lookup, then three views (month grid, week list, quarters). ADI is blue, ASE is amber everywhere. */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --fg:#14181f; --muted:#586272; --line:#dce1e8;
+  --adi:#2554d6; --adi-soft:#e3eaff; --ase:#a84d08; --ase-soft:#fdebd9;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1318; --surface:#171c23; --fg:#e8ecf1; --muted:#98a2b1; --line:#2a313b;
+    --adi:#86a6ff; --adi-soft:#1b2a52; --ase:#f2a867; --ase-soft:#3a2614; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1318; --surface:#171c23; --fg:#e8ecf1; --muted:#98a2b1; --line:#2a313b;
+  --adi:#86a6ff; --adi-soft:#1b2a52; --ase:#f2a867; --ase-soft:#3a2614; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.45;
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-size:22px;line-height:1.2;margin:0;font-weight:600;text-wrap:balance}
+h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:600}
+.sub{color:var(--muted);margin:4px 0 0;max-width:65ch}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.adi-t{color:var(--adi)} .ase-t{color:var(--ase)}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:560px){.pair{grid-template-columns:1fr}}
+.now{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.now.adi{border-top:3px solid var(--adi)} .now.ase{border-top:3px solid var(--ase)}
+.now .who{font-size:12px;font-weight:600;letter-spacing:.08em}
+.now .big{font-family:var(--mono);font-weight:600;font-size:34px;line-height:1.1;margin:4px 0}
+.now .meta{color:var(--muted);font-size:13px}
+.now .next{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.find{display:flex;flex-wrap:wrap;gap:12px}
+.find label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);flex:1 1 180px;min-width:0}
+input,select{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0;width:100%}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--adi);outline-offset:2px}
+.result{margin-top:10px;display:grid;gap:6px;font-size:13.5px}
+.result div{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.chip{font-family:var(--mono);font-weight:600;font-size:13px;padding:1px 7px;border-radius:5px}
+.chip.adi{background:var(--adi-soft);color:var(--adi)} .chip.ase{background:var(--ase-soft);color:var(--ase)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+button{font:inherit;font-size:13px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+.tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.bar .t{font-weight:600;font-size:16px}
+.bar .b{display:flex;gap:6px}
+.scroll{overflow-x:auto}
+.grid{display:grid;grid-template-columns:52px 52px repeat(7,minmax(36px,1fr));min-width:420px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--line);gap:1px}
+.grid>div{background:var(--surface);padding:4px 5px;min-width:0}
+.grid .hd{font-size:11px;font-weight:600;color:var(--muted);text-align:center;padding:6px 2px}
+.grid .hd.adi{color:var(--adi)} .grid .hd.ase{color:var(--ase)}
+.grid .ww{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center}
+.grid .ww b{font-family:var(--mono);font-size:14px;font-weight:600}
+.grid .ww small{font-size:10px;color:var(--muted);white-space:nowrap}
+.grid .ww.adi{background:var(--adi-soft)} .grid .ww.adi b{color:var(--adi)}
+.grid .ww.ase{background:var(--ase-soft)} .grid .ww.ase b{color:var(--ase)}
+.grid .ww.qs{box-shadow:inset 0 3px 0 0 currentColor} .grid .ww.adi.qs{color:var(--adi)} .grid .ww.ase.qs{color:var(--ase)}
+.grid .ww.qs small{color:var(--fg);font-weight:600}
+.grid .day{height:46px;font-size:13px;font-variant-numeric:tabular-nums}
+.grid .day.out{color:var(--muted);opacity:.55}
+.grid .day span{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:12px;padding:0 4px}
+.grid .day.today span{background:var(--fg);color:var(--bg);font-weight:600}
+.grid .ww.curwk{outline:2px solid var(--fg);outline-offset:-2px}
+.legend{margin:8px 0 0;font-size:12px;color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface);font-size:12px;color:var(--muted);font-weight:600;z-index:1;box-shadow:0 1px 0 var(--line)}
+tr.cur td{background:var(--bg);font-weight:600}
+tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--fg)}
+.note{color:var(--muted);font-size:12.5px;white-space:normal}
+.tbl{max-height:68vh;overflow:auto;position:relative;border:1px solid var(--line);border-radius:8px}
+.qgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:700px){.qgrid{grid-template-columns:1fr}}
+.qblock h3{margin:0 0 6px;font-size:14px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.tag{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted);font-weight:500}
+.assump{color:var(--muted);font-size:12.5px;display:grid;gap:4px;margin:0;padding-left:18px}
+[hidden]{display:none!important}
+html{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>ADI and ASE Work Weeks</h1>
+    <p class="sub">Both calendars run Sunday to Saturday. Each fiscal year has 4 quarters of 13 weeks (3 months each), and 52 or 53 weeks in total. In a 53-week year, Q4 has 14 weeks.</p>
+  </header>
+
+  <section aria-label="This week">
+    <h2>This week</h2>
+    <div class="pair" id="now"></div>
+  </section>
+
+  <section class="panel" aria-label="Find a week">
+    <h2>Find a week</h2>
+    <div class="find">
+      <label>Date<input type="date" id="qDate"></label>
+      <label>Work week number (for example 701)<input type="text" id="qWW" inputmode="numeric" placeholder="701" autocomplete="off"></label>
+    </div>
+    <div class="result" id="result" aria-live="polite"></div>
+  </section>
+
+  <section>
+    <div class="tabs" role="group" aria-label="View">
+      <button type="button" data-tab="month" aria-pressed="true">Month</button>
+      <button type="button" data-tab="weeks" aria-pressed="false">Week list</button>
+      <button type="button" data-tab="quarters" aria-pressed="false">Quarters</button>
+    </div>
+  </section>
+
+  <section id="v-month">
+    <div class="bar">
+      <div class="t" id="mTitle"></div>
+      <div class="b">
+        <button type="button" id="mPrev" aria-label="Previous month">Prev</button>
+        <button type="button" id="mToday">Today</button>
+        <button type="button" id="mNext" aria-label="Next month">Next</button>
+      </div>
+    </div>
+    <div class="scroll"><div class="grid" id="mGrid"></div></div>
+    <p class="legend">Number is the work week. Small text is the quarter. A bar on top marks the first week of a quarter. Outlined cell is the current week.</p>
+  </section>
+
+  <section id="v-weeks" hidden>
+    <div class="bar">
+      <label style="flex:1 1 220px;min-width:0"><input type="text" id="wSearch" placeholder="Filter: 702, WW645, Jan 2027, Q2" autocomplete="off" aria-label="Filter weeks"></label>
+      <div class="b"><button type="button" id="wJump">Jump to this week</button></div>
+    </div>
+    <div class="tbl" id="wWrap">
+      <table>
+        <thead><tr><th>Week (Sun to Sat)</th><th>ADI WW</th><th>ASE WW</th><th>Starts</th></tr></thead>
+        <tbody id="wBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="v-quarters" hidden>
+    <div class="bar"><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);width:160px">Fiscal year<select id="qFy"></select></label></div>
+    <div class="qgrid" id="qGrid"></div>
+  </section>
+
+  <section class="panel">
+    <h2>What this is based on</h2>
+    <ul class="assump">
+      <li>ADI FY ends on the Saturday closest to 31 Oct. ASE FY ends on the Saturday closest to 31 Dec. That is why some years have 53 weeks (ADI FY29 and ASE FY25 in this calendar).</li>
+      <li>The rule reproduces the dates you gave: ADI FY26 starts 2 Nov 2025, ADI FY27 starts 1 Nov 2026, ASE FY27 starts 3 Jan 2027. Years marked "by rule" come only from the rule.</li>
+      <li>ADI FY26 work week numbers (601 to 652) still need confirming. The calendar runs to the end of ADI FY29 (3 Nov 2029).</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+var DAY=86400000;
+function utc(s){var p=s.split('-').map(Number);return Date.UTC(p[0],p[1]-1,p[2]);}
+function fmt(t,o){return new Date(t).toLocaleDateString('en-GB',Object.assign({timeZone:'UTC'},o));}
+var dm=function(t){return fmt(t,{day:'numeric',month:'short'});};
+var dmy=function(t){return fmt(t,{day:'numeric',month:'short',year:'numeric'});};
+var mon=function(t){return fmt(t,{month:'short'});};
+
+/* Fiscal year ends on the Saturday closest to 31 Oct (ADI) or 31 Dec (ASE). A year therefore has 52 or 53 weeks. */
+function satClosest(y,m,d){var t=Date.UTC(y,m,d),dow=new Date(t).getUTCDay(),fwd=(6-dow+7)%7,back=(dow+1)%7;return fwd<back?t+fwd*DAY:t-back*DAY;}
+function buildFys(m,d,from,to,given){
+  var a=[];
+  for(var n=from;n<=to;n++){
+    var st=satClosest(2000+n-1,m,d)+DAY, en=satClosest(2000+n,m,d);
+    a.push({fy:n,start:st,end:en,weeks:Math.round((en-st+DAY)/(7*DAY)),given:given.indexOf(n)>=0});
+  }
+  return a;
+}
+var SYS={
+  adi:{name:'ADI',fys:buildFys(9,31,26,29,[26,27])},
+  ase:{name:'ASE',fys:buildFys(11,31,25,29,[27])}
+};
+function info(key,t){
+  var f=SYS[key].fys;
+  for(var i=0;i<f.length;i++){
+    var idx=Math.floor((t-f[i].start)/(7*DAY));
+    if(idx>=0&&idx<f[i].weeks){
+      return {fy:f[i].fy,idx:idx,weeks:f[i].weeks,ww:(f[i].fy-20)*100+idx+1,q:Math.min(4,Math.floor(idx/13)+1),
+        fyFirst:idx===0,qFirst:idx<52&&idx%13===0,start:f[i].start+idx*7*DAY,fyStart:f[i].start,fyEnd:f[i].end};
+    }
+  }
+  return null;
+}
+function sundayOf(t){return t-new Date(t).getUTCDay()*DAY;}
+
+var FIRST=utc('2025-11-02');
+var ENDT=SYS.adi.fys[SYS.adi.fys.length-1].end;
+var N=Math.round((ENDT+DAY-FIRST)/(7*DAY));
+var WEEKS=[];
+for(var i=0;i<N;i++){var t=FIRST+i*7*DAY;WEEKS.push({t:t,adi:info('adi',t),ase:info('ase',t)});}
+var LM=new Date(ENDT-6*DAY);
+var LAST_MONTH=[LM.getUTCFullYear(),LM.getUTCMonth()], FIRST_MONTH=[2025,10];
+
+var n=new Date();
+var TODAY=Date.UTC(n.getFullYear(),n.getMonth(),n.getDate());
+var TODAY_SUN=sundayOf(TODAY);
+
+function wwl(x){return x?'WW'+x.ww:'-';}
+function ql(x){return x?'FY'+x.fy+' Q'+x.q:'';}
+
+/* This week cards */
+function nowCard(key){
+  var x=info(key,TODAY_SUN), nm=SYS[key].name;
+  if(!x){return '<div class="now '+key+'"><div class="who '+key+'-t">'+nm+'</div><div class="meta">Today is outside the calendar range.</div></div>';}
+  var nextWW=x.q<4?(x.fy-20)*100+x.q*13+1:(x.fy+1-20)*100+1;
+  var nextStart=x.q<4?x.fyStart+x.q*13*7*DAY:x.fyEnd+DAY;
+  var weeksLeft=Math.round((nextStart-TODAY_SUN)/(7*DAY));
+  return '<div class="now '+key+'"><div class="who '+key+'-t">'+nm+'</div>'+
+    '<div class="big '+key+'-t">WW'+x.ww+'</div>'+
+    '<div class="meta">FY'+x.fy+' · Q'+x.q+'</div>'+
+    '<div class="meta">'+dm(TODAY_SUN)+' to '+dmy(TODAY_SUN+6*DAY)+'</div>'+
+    '<div class="next">'+(x.q<4?'Q'+(x.q+1):'FY'+(x.fy+1)+' Q1')+' starts '+dmy(nextStart)+' (WW'+nextWW+'), in '+weeksLeft+' weeks</div></div>';
+}
+document.getElementById('now').innerHTML=nowCard('adi')+nowCard('ase');
+
+/* Find a week */
+var qDate=document.getElementById('qDate'), qWW=document.getElementById('qWW'), result=document.getElementById('result');
+function weekLine(key,x){
+  if(!x)return '<div><span class="chip '+key+'">'+SYS[key].name+'</span><span>Not in the calendar range</span></div>';
+  return '<div><span class="chip '+key+'">'+SYS[key].name+' WW'+x.ww+'</span><span>FY'+x.fy+' Q'+x.q+', '+dm(x.start)+' to '+dmy(x.start+6*DAY)+'</span></div>';
+}
+function runDate(){
+  if(!qDate.value){result.innerHTML='';return;}
+  var t=sundayOf(utc(qDate.value));
+  result.innerHTML=weekLine('adi',info('adi',t))+weekLine('ase',info('ase',t));
+}
+function runWW(){
+  var d=qWW.value.replace(/\D/g,'');
+  if(!d){result.innerHTML='';return;}
+  var v=parseInt(d,10), out='';
+  ['adi','ase'].forEach(function(k){
+    var hit=WEEKS.filter(function(w){return w[k]&&w[k].ww===v;})[0];
+    out+=hit?weekLine(k,hit[k]):'<div><span class="chip '+k+'">'+SYS[k].name+' WW'+v+'</span><span>Not between Nov 2025 and Oct 2029</span></div>';
+  });
+  result.innerHTML=out;
+}
+qDate.addEventListener('input',function(){qWW.value='';runDate();});
+qWW.addEventListener('input',function(){qDate.value='';runWW();});
+
+/* Month view */
+var cur=[n.getFullYear(),n.getMonth()];
+function clampMonth(){
+  var v=cur[0]*12+cur[1];
+  var lo=FIRST_MONTH[0]*12+FIRST_MONTH[1], hi=LAST_MONTH[0]*12+LAST_MONTH[1];
+  if(v<lo)v=lo; if(v>hi)v=hi;
+  cur=[Math.floor(v/12),v%12];
+}
+function wwCell(key,x,isCur){
+  if(!x)return '<div class="ww"><b>-</b></div>';
+  var small=x.fyFirst?'FY'+x.fy+'·Q1':'Q'+x.q;
+  return '<div class="ww '+key+(x.qFirst?' qs':'')+(isCur?' curwk':'')+'"><b>'+x.ww+'</b><small>'+small+'</small></div>';
+}
+function renderMonth(){
+  clampMonth();
+  var y=cur[0],m=cur[1];
+  document.getElementById('mTitle').textContent=new Date(Date.UTC(y,m,1)).toLocaleDateString('en-GB',{timeZone:'UTC',month:'long',year:'numeric'});
+  var lo=FIRST_MONTH[0]*12+FIRST_MONTH[1], hi=LAST_MONTH[0]*12+LAST_MONTH[1], v=y*12+m;
+  document.getElementById('mPrev').disabled=v<=lo;
+  document.getElementById('mNext').disabled=v>=hi;
+  var first=Date.UTC(y,m,1), last=Date.UTC(y,m+1,0), s=sundayOf(first);
+  var h='<div class="hd adi">ADI</div><div class="hd ase">ASE</div>';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(function(d){h+='<div class="hd">'+d+'</div>';});
+  for(var w=s;w<=last;w+=7*DAY){
+    var isCur=w===TODAY_SUN;
+    h+=wwCell('adi',info('adi',w),isCur)+wwCell('ase',info('ase',w),isCur);
+    for(var d=0;d<7;d++){
+      var t=w+d*DAY, dt=new Date(t);
+      var cls='day'+(dt.getUTCMonth()!==m?' out':'')+(t===TODAY?' today':'');
+      h+='<div class="'+cls+'"><span>'+dt.getUTCDate()+'</span></div>';
+    }
+  }
+  document.getElementById('mGrid').innerHTML=h;
+}
+document.getElementById('mPrev').addEventListener('click',function(){cur[1]--;if(cur[1]<0){cur[1]=11;cur[0]--;}renderMonth();});
+document.getElementById('mNext').addEventListener('click',function(){cur[1]++;if(cur[1]>11){cur[1]=0;cur[0]++;}renderMonth();});
+document.getElementById('mToday').addEventListener('click',function(){cur=[n.getFullYear(),n.getMonth()];renderMonth();});
+
+/* Week list */
+var wBody=document.getElementById('wBody'), wWrap=document.getElementById('wWrap');
+function startsNote(w){
+  var out=[];
+  ['adi','ase'].forEach(function(k){
+    var x=w[k]; if(!x||!x.qFirst)return;
+    out.push('<span class="chip '+k+'">'+SYS[k].name+'</span> '+(x.fyFirst?'FY'+x.fy+' Q1':'Q'+x.q));
+  });
+  return out.join(' &nbsp; ');
+}
+(function(){
+  var h='';
+  WEEKS.forEach(function(w){
+    var isCur=w.t===TODAY_SUN;
+    var text=(dm(w.t)+' '+dmy(w.t+6*DAY)+' '+fmt(w.t,{month:'long'})+' '+fmt(w.t+6*DAY,{month:'long',year:'numeric'})+' '+wwl(w.adi)+' '+wwl(w.ase)+' '+ql(w.adi)+' '+ql(w.ase)).toLowerCase();
+    h+='<tr data-s="'+text+'"'+(isCur?' class="cur" id="curRow"':'')+'><td>'+dm(w.t)+' to '+dmy(w.t+6*DAY)+'</td>'+
+      '<td class="mono adi-t">'+wwl(w.adi)+' <span class="note">'+(w.adi?'Q'+w.adi.q:'')+'</span></td>'+
+      '<td class="mono ase-t">'+wwl(w.ase)+' <span class="note">'+(w.ase?'Q'+w.ase.q:'')+'</span></td>'+
+      '<td class="note">'+startsNote(w)+'</td></tr>';
+  });
+  wBody.innerHTML=h;
+})();
+document.getElementById('wSearch').addEventListener('input',function(e){
+  var q=e.target.value.trim().toLowerCase();
+  Array.prototype.forEach.call(wBody.rows,function(r){r.hidden=q&&r.getAttribute('data-s').indexOf(q)<0;});
+});
+document.getElementById('wJump').addEventListener('click',function(){
+  document.getElementById('wSearch').value='';
+  Array.prototype.forEach.call(wBody.rows,function(r){r.hidden=false;});
+  var r=document.getElementById('curRow');
+  if(r){wWrap.scrollTop=r.offsetTop-wWrap.clientHeight/2;}
+});
+
+/* Quarters */
+var qFy=document.getElementById('qFy');
+function renderQuarters(fy){
+  var h='';
+  ['adi','ase'].forEach(function(k){
+    var f=SYS[k].fys.filter(function(x){return x.fy===fy;})[0];
+    if(!f)return;
+    var rows='';
+    for(var q=1;q<=4;q++){
+      var wk=q<4?13:f.weeks-39;
+      var qs=f.start+(q-1)*13*7*DAY, qe=qs+wk*7*DAY-DAY;
+      var w1=(fy-20)*100+(q-1)*13+1, w2=w1+wk-1;
+      var isNow=TODAY>=qs&&TODAY<=qe;
+      rows+='<tr'+(isNow?' class="cur"':'')+'><td>Q'+q+'</td><td class="mono">WW'+w1+' to '+w2+'</td><td>'+dm(qs)+' to '+dmy(qe)+'</td><td class="note">'+mon(qs)+' to '+mon(qe)+(wk===14?' (14 weeks)':'')+'</td></tr>';
+    }
+    h+='<div class="panel qblock"><h3><span class="'+k+'-t">'+SYS[k].name+' FY'+fy+'</span><span class="tag">'+f.weeks+' weeks</span>'+(f.given?'':'<span class="tag">by rule</span>')+'<span class="note">'+dmy(f.start)+' to '+dmy(f.end)+'</span></h3>'+
+      '<div class="scroll"><table><thead><tr><th>Qtr</th><th>Work weeks</th><th>Dates</th><th>Months</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  });
+  document.getElementById('qGrid').innerHTML=h;
+}
+(function(){
+  var o='';
+  for(var fy=26;fy<=29;fy++){o+='<option value="'+fy+'">FY'+fy+'</option>';}
+  qFy.innerHTML=o;
+  var c=info('adi',TODAY_SUN);
+  qFy.value=String(c?c.fy:27);
+  renderQuarters(parseInt(qFy.value,10));
+  qFy.addEventListener('change',function(){renderQuarters(parseInt(qFy.value,10));});
+})();
+
+/* Tabs */
+var views=['month','weeks','quarters'];
+function show(name){
+  if(views.indexOf(name)<0)name='month';
+  views.forEach(function(v){document.getElementById('v-'+v).hidden=v!==name;});
+  Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'),function(b){b.setAttribute('aria-pressed',b.getAttribute('data-tab')===name?'true':'false');});
+  if(name==='weeks'){var r=document.getElementById('curRow');if(r)wWrap.scrollTop=r.offsetTop-wWrap.clientHeight/2;}
+}
+Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'),function(b){
+  b.addEventListener('click',function(){var t=b.getAttribute('data-tab');try{location.hash=t;}catch(e){}show(t);});
+});
+window.addEventListener('hashchange',function(){show(location.hash.replace('#',''));});
+
+renderMonth();
+show(location.hash.replace('#',''));
+})();
+</script>
+</body>
+</html>
